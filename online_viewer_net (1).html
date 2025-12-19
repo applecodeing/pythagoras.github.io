@@ -1,0 +1,348 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>피타고라스 정리 계산기</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Pretendard:wght@100;400;700;900&display=swap');
+        
+        body {
+            font-family: 'Pretendard', sans-serif;
+            background-color: #0f172a;
+            color: #e2e8f0;
+            margin: 0;
+            overflow-x: hidden;
+        }
+
+        .glass {
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .gradient-text {
+            background: linear-gradient(to right, #818cf8, #a78bfa, #f472b6);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .input-active {
+            border-color: rgba(99, 102, 241, 0.5) !important;
+            box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.2);
+        }
+
+        input::-webkit-outer-spin-button,
+        input::-webkit-inner-spin-button {
+            -webkit-appearance: none;
+            margin: 0;
+        }
+
+        .triangle-path {
+            transition: all 0.7s ease-in-out;
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col items-center py-12 px-6">
+    <!-- 배경 장식 -->
+    <div class="fixed top-[-10%] left-[-10%] w-[40%] h-[40%] bg-indigo-600/10 blur-[120px] rounded-full -z-10"></div>
+    <div class="fixed bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-purple-600/10 blur-[120px] rounded-full -z-10"></div>
+
+    <!-- 헤더 -->
+    <header class="relative z-10 text-center mb-12">
+        <h1 class="text-4xl font-black mb-4 gradient-text">피타고라스 정리 계산기</h1>
+        <p class="text-slate-400 max-w-2xl mx-auto leading-relaxed">
+            직각삼각형의 변을 실시간으로 계산하고, 3000년 전 피타고라스 학파의 비밀을 탐구해보세요.
+        </p>
+    </header>
+
+    <main class="relative z-10 max-w-5xl w-full grid lg:grid-cols-2 gap-8 items-stretch mb-16">
+        <!-- 왼쪽: 미리보기 -->
+        <div class="glass rounded-[2.5rem] p-8 flex flex-col justify-between shadow-2xl">
+            <div>
+                <div class="flex items-center gap-3 mb-8">
+                    <div class="p-3 bg-indigo-500/20 rounded-2xl text-indigo-400">
+                        <i class="fa-solid fa-calculator text-xl"></i>
+                    </div>
+                    <h2 class="text-xl font-bold">도형 미리보기</h2>
+                </div>
+
+                <div class="relative h-64 flex items-center justify-center">
+                    <svg width="260" height="220" viewBox="0 0 260 220" id="triangleSvg">
+                        <defs>
+                            <linearGradient id="triGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                                <stop offset="0%" stop-color="#6366f1" stop-opacity="0.3" />
+                                <stop offset="100%" stop-color="#a855f7" stop-opacity="0.1" />
+                            </linearGradient>
+                        </defs>
+                        <polygon id="trianglePoly" points="20,130 20,180 120,180" fill="url(#triGradient)" stroke="rgba(99, 102, 241, 0.8)" stroke-width="3" class="triangle-path" />
+                        
+                        <text id="labelA" x="5" y="155" class="fill-slate-400 text-[12px]" text-anchor="end">높이(a)</text>
+                        <text id="labelB" x="70" y="200" class="fill-slate-400 text-[12px]" text-anchor="middle">밑변(b)</text>
+                        <text id="labelC" x="80" y="150" class="fill-indigo-400 text-[14px] font-bold" text-anchor="start">빗변(c)</text>
+                    </svg>
+                </div>
+            </div>
+            <div class="mt-8 p-6 bg-white/5 rounded-3xl border border-white/5">
+                <div class="flex items-center gap-2 text-indigo-400 mb-2 font-bold text-xs tracking-widest uppercase">기본 정리</div>
+                <p class="text-3xl font-light text-slate-100">a² + b² = c²</p>
+            </div>
+        </div>
+
+        <!-- 오른쪽: 입력 및 결과 -->
+        <div class="bg-slate-900/40 border border-white/5 rounded-[2.5rem] p-8 flex flex-col gap-6 shadow-xl">
+            <div class="space-y-6">
+                <div class="flex items-center justify-between">
+                    <h2 class="text-lg font-semibold text-slate-100">변의 길이 입력</h2>
+                    <button id="resetBtn" class="text-slate-500 hover:text-white transition-colors p-2 bg-white/5 rounded-full">
+                        <i class="fa-solid fa-rotate-left"></i>
+                    </button>
+                </div>
+                <div class="space-y-4">
+                    <div class="input-group" id="groupA">
+                        <label class="block text-sm font-medium mb-2 ml-1 text-slate-500">높이 (변 a)</label>
+                        <input type="number" id="inputA" placeholder="수치 입력" class="w-full bg-slate-800/50 border border-slate-700 rounded-2xl px-5 py-4 outline-none focus:ring-2 focus:ring-indigo-500/40 transition-all text-lg font-medium">
+                    </div>
+                    <div class="input-group" id="groupB">
+                        <label class="block text-sm font-medium mb-2 ml-1 text-slate-500">밑변 (변 b)</label>
+                        <input type="number" id="inputB" placeholder="수치 입력" class="w-full bg-slate-800/50 border border-slate-700 rounded-2xl px-5 py-4 outline-none focus:ring-2 focus:ring-indigo-500/40 transition-all text-lg font-medium">
+                    </div>
+                    <div class="input-group" id="groupC">
+                        <label class="block text-sm font-medium mb-2 ml-1 text-slate-500">빗변 (변 c)</label>
+                        <input type="number" id="inputC" placeholder="수치 입력" class="w-full bg-slate-800/50 border border-slate-700 rounded-2xl px-5 py-4 outline-none focus:ring-2 focus:ring-indigo-500/40 transition-all text-lg font-medium">
+                    </div>
+                </div>
+            </div>
+
+            <div id="resultContainer" class="flex-1 flex flex-col justify-end min-h-[140px]">
+                <div class="p-6 border-2 border-dashed border-slate-800 rounded-[2rem] flex flex-col items-center justify-center text-slate-600 gap-2">
+                    <i class="fa-solid fa-arrow-right opacity-50"></i>
+                    <p class="text-sm font-medium text-center">두 개의 변을 입력하면<br>나머지 한 변을 자동으로 계산합니다</p>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- 역사 섹션 -->
+    <section class="relative z-10 max-w-5xl w-full grid md:grid-cols-2 gap-8 mb-12">
+        <div class="glass p-10 rounded-[2.5rem] relative overflow-hidden group">
+            <div class="absolute top-0 right-0 p-6 opacity-5 group-hover:opacity-10 transition-opacity">
+                <i class="fa-solid fa-hourglass-half text-[120px]"></i>
+            </div>
+            <div class="text-indigo-400 mb-6 flex items-center gap-3">
+                <i class="fa-solid fa-users text-2xl"></i>
+                <h3 class="text-xl font-bold text-white">만물은 수로 이루어져 있다</h3>
+            </div>
+            <div class="space-y-4 text-slate-400 text-sm leading-relaxed">
+                <p>기원전 570년경 탄생한 수학자 <strong>피타고라스</strong>는 이탈리아 크로톤에 '피타고라스 학파'를 세웠습니다. 그들은 수의 완벽한 조화를 믿으며 만물의 근원을 탐구했습니다.</p>
+                <p>피타고라스 정리는 고대 측량 기술을 논리적인 수학 공식으로 확립한 성과였지만, 곧 학파의 근본 믿음을 뒤흔들게 됩니다.</p>
+            </div>
+        </div>
+
+        <div class="glass p-10 rounded-[2.5rem] relative overflow-hidden group">
+            <div class="absolute top-0 right-0 p-6 opacity-5 group-hover:opacity-10 transition-opacity">
+                <i class="fa-solid fa-shield-halved text-[120px]"></i>
+            </div>
+            <div class="text-red-400 mb-6 flex items-center gap-3">
+                <i class="fa-solid fa-triangle-exclamation text-2xl"></i>
+                <h3 class="text-xl font-bold text-white">충격적인 비밀: 무리수의 발견</h3>
+            </div>
+            <div class="space-y-4 text-slate-400 text-sm leading-relaxed">
+                <p>한 변이 1인 정사각형의 빗변을 구하던 중, 정수 비율로 표현할 수 없는 <strong>무리수(√2)</strong>가 발견되었습니다. 이는 학파의 교리를 깨뜨리는 충격적인 사건이었습니다.</p>
+                <p>비밀을 누설한 제자 <strong>히파소스</strong>는 파문을 당했다는 전설이 전해지며, 이 정리는 고대 철학의 한계를 시험한 위대한 발견으로 남았습니다.</p>
+            </div>
+        </div>
+    </section>
+
+    <!-- 실생활 활용 -->
+    <section class="relative z-10 max-w-5xl w-full bg-indigo-500/5 border border-indigo-500/10 p-10 rounded-[2.5rem]">
+        <div class="flex items-center gap-4 mb-6">
+            <div class="p-3 bg-indigo-500/20 rounded-2xl text-indigo-400">
+                <i class="fa-solid fa-lightbulb"></i>
+            </div>
+            <h3 class="text-xl font-bold">현대 사회에서의 피타고라스</h3>
+        </div>
+        <div class="grid md:grid-cols-3 gap-8 text-sm">
+            <div class="space-y-2">
+                <div class="font-bold text-slate-200">측량 및 건축</div>
+                <p class="text-slate-400 leading-relaxed">건물의 수평과 수직을 맞추고 도면의 거리를 산출할 때 핵심 도구로 쓰입니다.</p>
+            </div>
+            <div class="space-y-2">
+                <div class="font-bold text-slate-200">항법 및 위치 정보</div>
+                <p class="text-slate-400 leading-relaxed">GPS 위성 신호를 이용해 목적지까지의 직선 거리를 계산하는 기반이 됩니다.</p>
+            </div>
+            <div class="space-y-2">
+                <div class="font-bold text-slate-200">디지털 디스플레이</div>
+                <p class="text-slate-400 leading-relaxed">모니터의 화면 인치(대각선 길이)를 정할 때 피타고라스 정리가 적용됩니다.</p>
+            </div>
+        </div>
+    </section>
+
+    <footer class="relative z-10 mt-16 text-slate-600 text-[10px] tracking-widest uppercase">
+        수학적 완벽함을 향한 탐구 &copy; 2025
+    </footer>
+
+    <script>
+        const inputA = document.getElementById('inputA');
+        const inputB = document.getElementById('inputB');
+        const inputC = document.getElementById('inputC');
+        const resetBtn = document.getElementById('resetBtn');
+        const resultContainer = document.getElementById('resultContainer');
+        const trianglePoly = document.getElementById('trianglePoly');
+        
+        const labels = {
+            a: document.getElementById('labelA'),
+            b: document.getElementById('labelB'),
+            c: document.getElementById('labelC')
+        };
+
+        const groups = {
+            a: document.getElementById('groupA'),
+            b: document.getElementById('groupB'),
+            c: document.getElementById('groupC')
+        };
+
+        function calculate() {
+            const a = parseFloat(inputA.value);
+            const b = parseFloat(inputB.value);
+            const c = parseFloat(inputC.value);
+
+            const filled = [];
+            if (inputA.value !== '' && !isNaN(a)) filled.push('a');
+            if (inputB.value !== '' && !isNaN(b)) filled.push('b');
+            if (inputC.value !== '' && !isNaN(c)) filled.push('c');
+
+            // 입력 제한 로직
+            [inputA, inputB, inputC].forEach(input => {
+                const id = input.id.replace('input', '').toLowerCase();
+                if (filled.length >= 2 && !filled.includes(id)) {
+                    input.disabled = true;
+                    groups[id].classList.add('opacity-40');
+                    input.placeholder = "결과 대기 중";
+                } else {
+                    input.disabled = false;
+                    groups[id].classList.remove('opacity-40');
+                    input.placeholder = "수치 입력";
+                }
+            });
+
+            if (filled.length === 2) {
+                let result = null;
+                let type = '';
+                let formula = '';
+                let error = '';
+
+                try {
+                    if (filled.includes('a') && filled.includes('b')) {
+                        result = Math.sqrt(a**2 + b**2);
+                        type = 'c';
+                        formula = `√(a² + b²)`;
+                    } else if (filled.includes('a') && filled.includes('c')) {
+                        if (c <= a) error = "빗변(c)은 높이(a)보다 커야 합니다.";
+                        else {
+                            result = Math.sqrt(c**2 - a**2);
+                            type = 'b';
+                            formula = `√(c² - a²)`;
+                        }
+                    } else if (filled.includes('b') && filled.includes('c')) {
+                        if (c <= b) error = "빗변(c)은 밑변(b)보다 커야 합니다.";
+                        else {
+                            result = Math.sqrt(c**2 - b**2);
+                            type = 'a';
+                            formula = `√(c² - b²)`;
+                        }
+                    }
+                } catch (e) {
+                    error = "계산 오류가 발생했습니다.";
+                }
+
+                if (error) {
+                    showError(error);
+                } else {
+                    showResult(type, result, formula);
+                    updateTriangle(type, result);
+                }
+            } else {
+                showPlaceholder();
+                updateTriangle(null, null);
+            }
+        }
+
+        function showResult(type, value, formula) {
+            const name = type === 'a' ? '높이(a)' : type === 'b' ? '밑변(b)' : '빗변(c)';
+            resultContainer.innerHTML = `
+                <div class="bg-gradient-to-br from-indigo-500 to-purple-600 p-6 rounded-[2rem] shadow-lg shadow-indigo-500/20 animate-in zoom-in duration-300">
+                    <div class="flex justify-between items-start mb-1">
+                       <span class="text-indigo-100 text-xs font-bold tracking-widest uppercase">계산 결과 (${name})</span>
+                       <div class="bg-white/20 px-2 py-1 rounded text-[10px] font-mono text-white">
+                          ${type} = ${formula}
+                       </div>
+                    </div>
+                    <div class="text-4xl font-black text-white">
+                      ${value.toLocaleString(undefined, { maximumFractionDigits: 4 })}
+                    </div>
+                </div>
+            `;
+        }
+
+        function showError(msg) {
+            resultContainer.innerHTML = `
+                <div class="bg-red-500/10 border border-red-500/20 text-red-400 p-4 rounded-2xl flex items-center gap-3 animate-pulse">
+                    <i class="fa-solid fa-circle-info"></i>
+                    <p class="text-sm font-medium">${msg}</p>
+                </div>
+            `;
+        }
+
+        function showPlaceholder() {
+            resultContainer.innerHTML = `
+                <div class="p-6 border-2 border-dashed border-slate-800 rounded-[2rem] flex flex-col items-center justify-center text-slate-600 gap-2">
+                    <i class="fa-solid fa-arrow-right opacity-50"></i>
+                    <p class="text-sm font-medium text-center">두 개의 변을 입력하면<br>나머지 한 변을 자동으로 계산합니다</p>
+                </div>
+            `;
+        }
+
+        function updateTriangle(resultType, resultValue) {
+            const maxWidth = 200;
+            const maxHeight = 160;
+            const x0 = 20;
+            const y0 = 180;
+
+            let a = parseFloat(inputA.value) || (resultType === 'a' ? resultValue : 50);
+            let b = parseFloat(inputB.value) || (resultType === 'b' ? resultValue : 100);
+
+            if (isNaN(a) || a <= 0) a = 50;
+            if (isNaN(b) || b <= 0) b = 100;
+
+            const scale = Math.min(maxWidth / b, maxHeight / a);
+            const w = b * scale;
+            const h = a * scale;
+
+            trianglePoly.setAttribute('points', `${x0},${y0-h} ${x0},${y0} ${x0+w},${y0}`);
+            
+            // 라벨 위치 조정
+            labels.a.setAttribute('y', y0 - h/2);
+            labels.b.setAttribute('x', x0 + w/2);
+            labels.c.setAttribute('x', x0 + w/2 + 10);
+            labels.c.setAttribute('y', y0 - h/2 - 10);
+        }
+
+        [inputA, inputB, inputC].forEach(input => {
+            input.addEventListener('input', calculate);
+        });
+
+        resetBtn.addEventListener('click', () => {
+            inputA.value = '';
+            inputB.value = '';
+            inputC.value = '';
+            calculate();
+        });
+
+        // 초기화
+        calculate();
+    </script>
+</body>
+</html>
